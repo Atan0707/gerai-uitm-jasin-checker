@@ -7,11 +7,11 @@ function isOperatingHours() {
 
 // Store multiple gerai statuses
 let geraiStatuses = {
-    'gerai11': { isOpen: false, lastUpdated: null, lastUpdatedBy: null },
-    'gerai12': { isOpen: false, lastUpdated: null, lastUpdatedBy: null },
-    'gerai13': { isOpen: false, lastUpdated: null, lastUpdatedBy: null },
-    'gerai14': { isOpen: false, lastUpdated: null, lastUpdatedBy: null },
-    'gerai15': { isOpen: false, lastUpdated: null, lastUpdatedBy: null }
+    'gerai11': { isOpen: false, lastUpdated: null },
+    'gerai12': { isOpen: false, lastUpdated: null },
+    'gerai13': { isOpen: false, lastUpdated: null },
+    'gerai14': { isOpen: false, lastUpdated: null },
+    'gerai15': { isOpen: false, lastUpdated: null }
 };
 
 function getGeraiStatus() {
@@ -37,17 +37,14 @@ function getGeraiStatus() {
         const updateInfo = status.lastUpdated 
             ? `\nLast Updated: ${status.lastUpdated}`
             : '\nNo updates yet';
-        const updatedBy = status.lastUpdatedBy 
-            ? `\nUpdated by: ${status.lastUpdatedBy}`
-            : '';
             
-        statusMessage += `${geraiNumber}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}\n\n`;
+        statusMessage += `${geraiNumber}: ${statusEmoji} ${statusText}${updateInfo}\n\n`;
     }
     
     return statusMessage;
 }
 
-function updateGeraiStatus(geraiId, username) {
+function updateGeraiStatus(geraiId) {
     // Check if within operating hours
     if (!isOperatingHours()) {
         return '⛔ Updates are disabled outside operating hours (12 AM - 7 AM).\nAll gerai are closed during this time.';
@@ -59,7 +56,6 @@ function updateGeraiStatus(geraiId, username) {
     
     geraiStatuses[geraiId].isOpen = !geraiStatuses[geraiId].isOpen;
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
-    geraiStatuses[geraiId].lastUpdatedBy = username;
     
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');
     return `✅ ${geraiNumber} status updated to: ${geraiStatuses[geraiId].isOpen ? 'Open 🟢' : 'Closed 🔴'}`;
@@ -71,7 +67,6 @@ function autoCloseAllGerai() {
         if (geraiStatuses[gerai].isOpen) {
             geraiStatuses[gerai].isOpen = false;
             geraiStatuses[gerai].lastUpdated = new Date().toLocaleString();
-            geraiStatuses[gerai].lastUpdatedBy = 'System (Auto-close)';
         }
     }
 }
