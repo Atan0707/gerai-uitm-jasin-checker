@@ -52,8 +52,11 @@ function getGeraiStatus() {
     // Normal status display during operating hours
     let statusMessage = '📊 *Current Gerai Statuses*\n\n';
     
-    for (const [gerai, status] of Object.entries(geraiStatuses)) {
-        const geraiNumber = gerai.replace('gerai', 'Gerai ');
+    for (const [geraiId, status] of Object.entries(geraiStatuses)) {
+        // Find the full gerai name from GERAI_LIST
+        const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
+        const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
+        
         const statusEmoji = status.isOpen ? '🟢' : '🔴';
         const statusText = status.isOpen ? 'Open' : 'Closed';
         const updateInfo = status.lastUpdated 
@@ -64,12 +67,12 @@ function getGeraiStatus() {
             : '';
             
         // Add pending votes information
-        const pendingVote = pendingVotes[gerai];
+        const pendingVote = pendingVotes[geraiId];
         const pendingInfo = pendingVote.voters.length > 0
             ? `\n⏳ Pending ${pendingVote.targetStatus} vote: ${pendingVote.voters.length}/2`
             : '';
             
-        statusMessage += `${geraiNumber}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}${pendingInfo}\n\n`;
+        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}${pendingInfo}\n\n`;
     }
     
     return statusMessage;
