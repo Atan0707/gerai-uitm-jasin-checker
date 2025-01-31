@@ -11,7 +11,16 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token, {
+    polling: {
+        autoStart: true,
+        params: {
+            timeout: 10,
+            limit: 100,
+            retryAfter: 5000
+        }
+    }
+});
 
 const patchNotes = `
 - Added more gerai
@@ -203,6 +212,43 @@ bot.onText(/\/unsubscribe/, (msg) => {
     const chatId = msg.chat.id;
     const response = removeSubscriber(chatId);
     bot.sendMessage(chatId, response);
+});
+
+// Add error handlers
+bot.on('polling_error', async (error) => {
+    console.log('Polling error occurred:', error.message);
+    
+    try {
+        // Stop polling on error
+        await bot.stopPolling();
+        console.log('Polling stopped, waiting to restart...');
+        
+        // Wait 5 seconds before trying to reconnect
+        setTimeout(async () => {
+            try {
+                await bot.startPolling();
+                console.log('Polling restarted successfully');
+            } catch (restartError) {
+                console.error('Failed to restart polling:', restartError);
+            }
+        }, 5000);
+    } catch (stopError) {
+        console.error('Error stopping polling:', stopError);
+    }
+});
+
+// Add general error handler
+bot.on('error', (error) => {
+    console.error('Bot error:', error);
+});
+
+// Add uncaught exception handler
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+    console.error('Unhandled Rejection:', error);
 });
 
 app.listen(PORT, () => {
