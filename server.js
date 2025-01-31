@@ -165,9 +165,9 @@ bot.on('callback_query', async (query) => {
         await bot.sendMessage(chatId, response);
         
         // Then automatically show the current status of all gerai
-        setTimeout(() => {
-            bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
-        }, 500);
+        // setTimeout(() => {
+        //     bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
+        // }, 500);
 
         // Create dynamic keyboard again for the update menu
         const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
