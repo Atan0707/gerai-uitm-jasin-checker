@@ -2,9 +2,9 @@
 const GERAI_LIST = [
     { id: 'gerai11', name: 'Gerai 11 - Kedai Air Belah Kanan' },
     // { id: 'gerai12', name: 'Gerai 12' },
-    // { id: 'gerai13', name: 'Gerai 13' },
-    // { id: 'gerai14', name: 'Gerai 14' },
-    // { id: 'gerai15', name: 'Gerai 15' },
+    { id: 'gerai13', name: 'Gerai 13 - Gerai Masakan Panas' },
+    { id: 'gerai14', name: 'Gerai 14 - Gerai Western' },
+    { id: 'gerai15', name: 'Gerai 15 - Gerai Nasi Bujang' },
     { id: 'gerai16', name: 'Gerai 16 - Kedai Roti Canai' },
     { id: 'gerai17', name: 'Gerai 17 - Kedai Nasi Campur (Cik Aida)' },
     { id: 'gerai18', name: 'Gerai 18 - Kedai Nasi Lemak' },

@@ -1,7 +1,7 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
-const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours } = require('./function');
+const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours, addSubscriber, removeSubscriber } = require('./function');
 const { GERAI_LIST } = require('./config');
 
 dotenv.config();
@@ -12,6 +12,14 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 const bot = new TelegramBot(token, { polling: true });
+
+const patchNotes = `
+- Added more gerai
+- Added vote system to update gerai status (no more trolling)
+- Added notification when gerai is opened (use /subscribe to get notified)
+`;
+
+const lastUpdated = '1/2/2025 12.15 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -52,6 +60,9 @@ bot.onText(/\/start/, (msg) => {
                 ],
                 [
                     { text: '📊 Check All Gerai Status', callback_data: 'gerai_status' }
+                ],
+                [
+                    { text: '🔔 Subscribe to Updates', callback_data: 'subscribe' }
                 ]
             ]
         }
@@ -59,9 +70,21 @@ bot.onText(/\/start/, (msg) => {
   
     bot.sendMessage(
         chatId, 
-        'UiTM Jasin Gerai Checker 🏪\nWhat would you like to do?\nApp last updated: 31/1/2025 1:30 PM', 
+        'UiTM Jasin Gerai Checker 🏪\n\nApp last updated: ' + lastUpdated + '\n\nPatch notes:' + patchNotes, 
         keyboard
     );
+});
+
+bot.onText(/\/subscribe/, (msg) => {
+    const chatId = msg.chat.id;
+    const response = addSubscriber(chatId);
+    bot.sendMessage(chatId, response);
+});
+
+bot.onText(/\/unsubscribe/, (msg) => {
+    const chatId = msg.chat.id;
+    const response = removeSubscriber(chatId);
+    bot.sendMessage(chatId, response);
 });
 
 bot.on('callback_query', async (query) => {
@@ -110,6 +133,9 @@ bot.on('callback_query', async (query) => {
                     ],
                     [
                         { text: '📊 Check All Gerai Status', callback_data: 'gerai_status' }
+                    ],
+                    [
+                        { text: '🔔 Subscribe to Updates', callback_data: 'subscribe' }
                     ]
                 ]
             }
@@ -125,9 +151,18 @@ bot.on('callback_query', async (query) => {
         );
     } else if (action === 'gerai_status') {
         bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
+    } else if (action === 'subscribe') {
+        const response = addSubscriber(chatId);
+        bot.sendMessage(chatId, response);
     } else if (action.startsWith('update_gerai')) {
         const geraiId = action.replace('update_', '');
-        const response = updateGeraiStatus(geraiId);
+        const username = query.from.username || 
+                        `${query.from.first_name}${query.from.last_name ? ' ' + query.from.last_name : ''}`;
+        
+        // Pass notification callback to updateGeraiStatus
+        const response = updateGeraiStatus(geraiId, username, (targetChatId, message) => {
+            bot.sendMessage(targetChatId, message, { parse_mode: 'Markdown' });
+        });
         
         // First send the update confirmation
         await bot.sendMessage(chatId, response);
@@ -167,6 +202,19 @@ bot.on('callback_query', async (query) => {
 
     // Answer the callback query to remove the loading state
     bot.answerCallbackQuery(query.id);
+});
+
+// Add notification commands
+bot.onText(/\/subscribe/, (msg) => {
+    const chatId = msg.chat.id;
+    const response = addSubscriber(chatId);
+    bot.sendMessage(chatId, response);
+});
+
+bot.onText(/\/unsubscribe/, (msg) => {
+    const chatId = msg.chat.id;
+    const response = removeSubscriber(chatId);
+    bot.sendMessage(chatId, response);
 });
 
 app.listen(PORT, () => {
