@@ -75,18 +75,6 @@ bot.onText(/\/start/, (msg) => {
     );
 });
 
-bot.onText(/\/subscribe/, (msg) => {
-    const chatId = msg.chat.id;
-    const response = addSubscriber(chatId);
-    bot.sendMessage(chatId, response);
-});
-
-bot.onText(/\/unsubscribe/, (msg) => {
-    const chatId = msg.chat.id;
-    const response = removeSubscriber(chatId);
-    bot.sendMessage(chatId, response);
-});
-
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const action = query.data;
@@ -142,7 +130,7 @@ bot.on('callback_query', async (query) => {
         };
         
         bot.editMessageText(
-            'UiTM Jasin Gerai Checker 🏪\nWhat would you like to do?',
+            'UiTM Jasin Gerai Checker 🏪\n\nApp last updated: ' + lastUpdated + '\n\nPatch notes:' + patchNotes,
             {
                 chat_id: chatId,
                 message_id: query.message.message_id,
