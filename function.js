@@ -1,50 +1,60 @@
-// Helper function to check if current time is within operating hours (before midnight)
+const { GERAI_LIST, OPERATING_HOURS } = require('./config');
+
+// Helper function to check if current time is within operating hours
 function isOperatingHours() {
     const now = new Date();
     const hour = now.getHours();
-    return hour < 24 && hour >= 7; // Operating between 7 AM and 12 AM
+    return hour < OPERATING_HOURS.end && hour >= OPERATING_HOURS.start;
 }
 
-// Store multiple gerai statuses
-let geraiStatuses = {
-    'gerai11': { isOpen: false, lastUpdated: null },
-    'gerai12': { isOpen: false, lastUpdated: null },
-    'gerai13': { isOpen: false, lastUpdated: null },
-    'gerai14': { isOpen: false, lastUpdated: null },
-    'gerai15': { isOpen: false, lastUpdated: null }
-};
+// Create gerai statuses dynamically from config
+let geraiStatuses = {};
+GERAI_LIST.forEach(gerai => {
+    geraiStatuses[gerai.id] = { 
+        isOpen: false, 
+        lastUpdated: null,
+        lastUpdatedBy: null 
+    };
+});
 
 function getGeraiStatus() {
     // If outside operating hours, show all gerai as closed
     if (!isOperatingHours()) {
         let statusMessage = '⏰ *Outside Operating Hours*\nAll gerai are closed.\n\n';
-        statusMessage += 'Operating Hours: 7:00 AM - 12:00 AM\n\n';
+        statusMessage += `Operating Hours: ${OPERATING_HOURS.start}:00 AM - ${OPERATING_HOURS.end}:00 PM\n\n`;
         
-        for (const [gerai, status] of Object.entries(geraiStatuses)) {
-            const geraiNumber = gerai.replace('gerai', 'Gerai ');
-            statusMessage += `${geraiNumber}: 🔴 Closed\n`;
-        }
+        GERAI_LIST.forEach(gerai => {
+            statusMessage += `${gerai.name}: 🔴 Closed\n`;
+        });
         return statusMessage;
     }
 
     // Normal status display during operating hours
     let statusMessage = '📊 *Current Gerai Statuses*\n\n';
     
-    for (const [gerai, status] of Object.entries(geraiStatuses)) {
-        const geraiNumber = gerai.replace('gerai', 'Gerai ');
+    GERAI_LIST.forEach(gerai => {
+        const status = geraiStatuses[gerai.id];
         const statusEmoji = status.isOpen ? '🟢' : '🔴';
         const statusText = status.isOpen ? 'Open' : 'Closed';
-        const updateInfo = status.lastUpdated 
-            ? `\nLast Updated: ${status.lastUpdated}`
-            : '\nNo updates yet';
-            
-        statusMessage += `${geraiNumber}: ${statusEmoji} ${statusText}${updateInfo}\n\n`;
-    }
+        
+        statusMessage += `${gerai.name}: ${statusEmoji} ${statusText}\n`;
+        
+        if (status.lastUpdated) {
+            statusMessage += `Last Updated: ${status.lastUpdated}\n`;
+            if (status.lastUpdatedBy) {
+                statusMessage += `Updated by: @${status.lastUpdatedBy}\n`;
+            }
+        } else {
+            statusMessage += 'No updates yet\n';
+        }
+        
+        statusMessage += '\n'; // Add extra line break between gerai
+    });
     
     return statusMessage;
 }
 
-function updateGeraiStatus(geraiId) {
+function updateGeraiStatus(geraiId, username) {
     // Check if within operating hours
     if (!isOperatingHours()) {
         return '⛔ Updates are disabled outside operating hours (12 AM - 7 AM).\nAll gerai are closed during this time.';
@@ -56,6 +66,7 @@ function updateGeraiStatus(geraiId) {
     
     geraiStatuses[geraiId].isOpen = !geraiStatuses[geraiId].isOpen;
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
+    geraiStatuses[geraiId].lastUpdatedBy = username;
     
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');
     return `✅ ${geraiNumber} status updated to: ${geraiStatuses[geraiId].isOpen ? 'Open 🟢' : 'Closed 🔴'}`;
@@ -67,6 +78,7 @@ function autoCloseAllGerai() {
         if (geraiStatuses[gerai].isOpen) {
             geraiStatuses[gerai].isOpen = false;
             geraiStatuses[gerai].lastUpdated = new Date().toLocaleString();
+            geraiStatuses[gerai].lastUpdatedBy = 'System (Auto-close)';
         }
     }
 }

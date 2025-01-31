@@ -2,6 +2,7 @@ const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
 const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours } = require('./function');
+const { GERAI_LIST } = require('./config');
 
 dotenv.config();
 
@@ -58,7 +59,7 @@ bot.onText(/\/start/, (msg) => {
   
     bot.sendMessage(
         chatId, 
-        'UiTM Jasin Gerai Checker 🏪\nWhat would you like to do?', 
+        'UiTM Jasin Gerai Checker 🏪\nWhat would you like to do?\nApp last updated: 31/1/2025 1:30 PM', 
         keyboard
     );
 });
@@ -69,22 +70,25 @@ bot.on('callback_query', async (query) => {
     const username = query.from.username || `${query.from.first_name} ${query.from.last_name || ''}`;
 
     if (action === 'show_update_options') {
+        // Create keyboard buttons dynamically from config
+        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
+            const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
+            
+            // Create new row every 2 buttons
+            if (index % 2 === 0) {
+                acc.push([button]);
+            } else {
+                acc[acc.length - 1].push(button);
+            }
+            return acc;
+        }, []);
+
+        // Add back button
+        buttons.push([{ text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }]);
+
         const updateKeyboard = {
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: 'Gerai 11', callback_data: 'update_gerai11' },
-                        { text: 'Gerai 12', callback_data: 'update_gerai12' },
-                        { text: 'Gerai 13', callback_data: 'update_gerai13' }
-                    ],
-                    [
-                        { text: 'Gerai 14', callback_data: 'update_gerai14' },
-                        { text: 'Gerai 15', callback_data: 'update_gerai15' }
-                    ],
-                    [
-                        { text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }
-                    ]
-                ]
+                inline_keyboard: buttons
             }
         };
         
@@ -123,7 +127,7 @@ bot.on('callback_query', async (query) => {
         bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
     } else if (action.startsWith('update_gerai')) {
         const geraiId = action.replace('update_', '');
-        const response = updateGeraiStatus(geraiId, username);
+        const response = updateGeraiStatus(geraiId);
         
         // First send the update confirmation
         await bot.sendMessage(chatId, response);
@@ -132,26 +136,22 @@ bot.on('callback_query', async (query) => {
         setTimeout(() => {
             bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
         }, 500);
-        
-        // Return to update options menu
-        const updateKeyboard = {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: 'Gerai 11', callback_data: 'update_gerai11' },
-                        { text: 'Gerai 12', callback_data: 'update_gerai12' },
-                        { text: 'Gerai 13', callback_data: 'update_gerai13' }
-                    ],
-                    [
-                        { text: 'Gerai 14', callback_data: 'update_gerai14' },
-                        { text: 'Gerai 15', callback_data: 'update_gerai15' }
-                    ],
-                    [
-                        { text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }
-                    ]
-                ]
+
+        // Create dynamic keyboard again for the update menu
+        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
+            const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
+            
+            // Create new row every 2 buttons
+            if (index % 2 === 0) {
+                acc.push([button]);
+            } else {
+                acc[acc.length - 1].push(button);
             }
-        };
+            return acc;
+        }, []);
+
+        // Add back button
+        buttons.push([{ text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }]);
         
         setTimeout(() => {
             bot.editMessageText(
@@ -159,7 +159,7 @@ bot.on('callback_query', async (query) => {
                 {
                     chat_id: chatId,
                     message_id: query.message.message_id,
-                    reply_markup: updateKeyboard.reply_markup
+                    reply_markup: { inline_keyboard: buttons }
                 }
             );
         }, 1000);
