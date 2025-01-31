@@ -18,7 +18,7 @@ const GERAI_LIST = [
 // Operating hours configuration
 const OPERATING_HOURS = {
     start: 7,  // 7 AM
-    end: 24    // 12 AM
+    end: 24    // 11.59 PM
 };
 
 module.exports = {

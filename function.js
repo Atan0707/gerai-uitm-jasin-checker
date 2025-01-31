@@ -41,7 +41,7 @@ function getGeraiStatus() {
     // If outside operating hours, show all gerai as closed
     if (!isOperatingHours()) {
         let statusMessage = '⏰ *Outside Operating Hours*\nAll gerai are closed.\n\n';
-        statusMessage += `Operating Hours: ${OPERATING_HOURS.start}:00 AM - ${OPERATING_HOURS.end}:00 PM\n\n`;
+        statusMessage += `Operating Hours: ${OPERATING_HOURS.start}:00 AM - 12:00 AM\n\n`;
         
         GERAI_LIST.forEach(gerai => {
             statusMessage += `${gerai.name}: 🔴 Closed\n`;
