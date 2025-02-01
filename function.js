@@ -1,4 +1,23 @@
+const fs = require('fs');
+const path = require('path');
 const { GERAI_LIST, OPERATING_HOURS, ADMIN_IDS } = require('./config');
+
+// Path to the subscriptions JSON file
+const subscriptionsFilePath = path.join(__dirname, 'subscriptions.json');
+
+// Helper function to read subscriptions from the JSON file
+function readSubscriptions() {
+    if (!fs.existsSync(subscriptionsFilePath)) {
+        return { subscribers: [] };
+    }
+    const data = fs.readFileSync(subscriptionsFilePath);
+    return JSON.parse(data);
+}
+
+// Helper function to write subscriptions to the JSON file
+function writeSubscriptions(subscriptions) {
+    fs.writeFileSync(subscriptionsFilePath, JSON.stringify(subscriptions, null, 2));
+}
 
 // Helper function to check if current time is within operating hours
 function isOperatingHours() {
@@ -28,13 +47,24 @@ GERAI_LIST.forEach(gerai => {
 
 // Add subscriber management functions
 function addSubscriber(chatId) {
-    subscribers.add(chatId);
-    return `✅ You will be notified when gerai opens!`;
+    const subscriptions = readSubscriptions();
+    if (!subscriptions.subscribers.includes(chatId)) {
+        subscriptions.subscribers.push(chatId);
+        writeSubscriptions(subscriptions);
+        return `✅ You will be notified when gerai opens!`;
+    }
+    return `⚠️ You are already subscribed!`;
 }
 
 function removeSubscriber(chatId) {
-    subscribers.delete(chatId);
-    return `❌ You will no longer receive notifications.`;
+    const subscriptions = readSubscriptions();
+    const index = subscriptions.subscribers.indexOf(chatId);
+    if (index !== -1) {
+        subscriptions.subscribers.splice(index, 1);
+        writeSubscriptions(subscriptions);
+        return `❌ You will no longer receive notifications.`;
+    }
+    return `⚠️ You are not subscribed!`;
 }
 
 function getGeraiStatus() {
@@ -62,9 +92,6 @@ function getGeraiStatus() {
         const updateInfo = status.lastUpdated 
             ? `\nLast Updated: ${status.lastUpdated}`
             : '\nNo updates yet';
-        const updatedBy = status.lastUpdatedBy 
-            ? `\nUpdated by: @${status.lastUpdatedBy}`
-            : '';
             
         // Add pending votes information
         const pendingVote = pendingVotes[geraiId];
@@ -72,7 +99,7 @@ function getGeraiStatus() {
             ? `\n✅ Open status confirmation: ${pendingVote.voters.length}/2`
             : '';
             
-        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}${pendingInfo}\n\n`;
+        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${pendingInfo}\n\n`;
     }
     
     return statusMessage;

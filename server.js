@@ -148,9 +148,6 @@ bot.on('callback_query', async (query) => {
         );
     } else if (action === 'gerai_status') {
         bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
-    } else if (action === 'subscribe') {
-        const response = addSubscriber(chatId);
-        bot.sendMessage(chatId, response);
     } else if (action.startsWith('update_gerai')) {
         const geraiId = action.replace('update_', '');
         const username = query.from.username || 
