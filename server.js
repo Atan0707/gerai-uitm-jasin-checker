@@ -23,12 +23,10 @@ const bot = new TelegramBot(token, {
 });
 
 const patchNotes = `
-- Added more gerai
-- Added vote system to update gerai status (no more trolling)
-- Added notification when gerai is opened (use /subscribe to get notified)
+- Removed vote system
 `;
 
-const lastUpdated = '1/2/2025 12.53 PM';
+const lastUpdated = '2/2/2025 12.27 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {

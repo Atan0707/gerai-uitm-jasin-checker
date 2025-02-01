@@ -29,7 +29,6 @@ function isOperatingHours() {
 // Add subscribers tracking
 let subscribers = new Set(); // Store chat IDs of subscribers
 let geraiStatuses = {};
-let pendingVotes = {};
 
 // Initialize statuses
 GERAI_LIST.forEach(gerai => {
@@ -37,11 +36,6 @@ GERAI_LIST.forEach(gerai => {
         isOpen: false, 
         lastUpdated: null,
         lastUpdatedBy: null 
-    };
-    pendingVotes[gerai.id] = {
-        targetStatus: null,
-        voters: [],
-        timestamp: null
     };
 });
 
@@ -83,7 +77,6 @@ function getGeraiStatus() {
     let statusMessage = '📊 *Current Gerai Statuses*\n\n';
     
     for (const [geraiId, status] of Object.entries(geraiStatuses)) {
-        // Find the full gerai name from GERAI_LIST
         const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
         const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
         
@@ -93,13 +86,7 @@ function getGeraiStatus() {
             ? `\nLast Updated: ${status.lastUpdated}`
             : '\nNo updates yet';
             
-        // Add pending votes information
-        const pendingVote = pendingVotes[geraiId];
-        const pendingInfo = pendingVote.voters.length > 0
-            ? `\n✅ Open status confirmation: ${pendingVote.voters.length}/2`
-            : '';
-            
-        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${pendingInfo}\n\n`;
+        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}\n\n`;
     }
     
     return statusMessage;
@@ -115,59 +102,27 @@ function updateGeraiStatus(geraiId, username, notifyCallback) {
         return 'Invalid gerai selected';
     }
 
-    const currentStatus = geraiStatuses[geraiId].isOpen;
-    const targetStatus = !currentStatus ? 'open' : 'close';
+    const previousStatus = geraiStatuses[geraiId].isOpen;
+    geraiStatuses[geraiId].isOpen = !previousStatus;
+    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
+    geraiStatuses[geraiId].lastUpdatedBy = username;
+
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');
 
-    // Check if user has already voted
-    if (pendingVotes[geraiId].voters.includes(username)) {
-        return `⚠️ You have already voted to ${targetStatus} ${geraiNumber}`;
-    }
-
-    // Reset votes if targeting different status or if votes are too old (5 minutes)
-    if (pendingVotes[geraiId].targetStatus !== targetStatus || 
-        (pendingVotes[geraiId].timestamp && Date.now() - pendingVotes[geraiId].timestamp > 300000)) {
-        pendingVotes[geraiId] = {
-            targetStatus: targetStatus,
-            voters: [username],
-            timestamp: Date.now()
-        };
-        return `✅ First vote to ${targetStatus} ${geraiNumber} (1/2 votes needed)`;
-    }
-
-    // Add vote
-    pendingVotes[geraiId].voters.push(username);
-
-    // If we have 2 votes, update the status
-    if (pendingVotes[geraiId].voters.length >= 2) {
-        const previousStatus = geraiStatuses[geraiId].isOpen;
-        geraiStatuses[geraiId].isOpen = !previousStatus;
-        geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
-        geraiStatuses[geraiId].lastUpdatedBy = pendingVotes[geraiId].voters.join(', @');
-
-        // Reset pending votes
-        pendingVotes[geraiId] = {
-            targetStatus: null,
-            voters: [],
-            timestamp: null
-        };
-
-        // If gerai is newly opened, notify subscribers
-        if (!previousStatus && geraiStatuses[geraiId].isOpen) {
-            const notificationMessage = `🔔 *${geraiNumber} is now OPEN!*\nUpdated by: @${geraiStatuses[geraiId].lastUpdatedBy}`;
-            
-            // Notify all subscribers
-            if (notifyCallback) {
-                subscribers.forEach(chatId => {
-                    notifyCallback(chatId, notificationMessage);
-                });
-            }
+    // If gerai is newly opened, notify subscribers
+    if (!previousStatus && geraiStatuses[geraiId].isOpen) {
+        const notificationMessage = `🔔 *${geraiNumber} is now OPEN!*\nUpdated by: @${username}`;
+        
+        // Notify all subscribers
+        if (notifyCallback) {
+            const subscriptions = readSubscriptions();
+            subscriptions.subscribers.forEach(chatId => {
+                notifyCallback(chatId, notificationMessage);
+            });
         }
-
-        return `✅ ${geraiNumber} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nConfirmed by: @${geraiStatuses[geraiId].lastUpdatedBy}`;
     }
 
-    return `✅ Vote recorded to ${targetStatus} ${geraiNumber} (${pendingVotes[geraiId].voters.length}/2 votes needed)`;
+    return `✅ ${geraiNumber} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;
 }
 
 // Function to automatically close all gerai at midnight
@@ -178,12 +133,6 @@ function autoCloseAllGerai() {
             geraiStatuses[gerai].lastUpdated = new Date().toLocaleString();
             geraiStatuses[gerai].lastUpdatedBy = 'System (Auto-close)';
         }
-        // Reset any pending votes
-        pendingVotes[gerai] = {
-            targetStatus: null,
-            voters: [],
-            timestamp: null
-        };
     }
 }
 
@@ -200,13 +149,6 @@ function adminUpdateGeraiStatus(geraiId, isOpen, adminUsername) {
     geraiStatuses[geraiId].isOpen = isOpen;
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
     geraiStatuses[geraiId].lastUpdatedBy = `${adminUsername} (Admin)`;
-
-    // Reset any pending votes
-    pendingVotes[geraiId] = {
-        targetStatus: null,
-        voters: [],
-        timestamp: null
-    };
 
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');
     return `🔧 Admin Update: ${geraiNumber} status set to: ${isOpen ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${adminUsername} (Admin)`;
