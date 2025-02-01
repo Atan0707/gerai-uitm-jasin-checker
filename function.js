@@ -1,4 +1,4 @@
-const { GERAI_LIST, OPERATING_HOURS } = require('./config');
+const { GERAI_LIST, OPERATING_HOURS, ADMIN_IDS } = require('./config');
 
 // Helper function to check if current time is within operating hours
 function isOperatingHours() {
@@ -160,11 +160,38 @@ function autoCloseAllGerai() {
     }
 }
 
+function isAdmin(userId) {
+    return ADMIN_IDS.includes(userId);
+}
+
+function adminUpdateGeraiStatus(geraiId, isOpen, adminUsername) {
+    if (!geraiStatuses[geraiId]) {
+        return 'Invalid gerai selected';
+    }
+
+    const previousStatus = geraiStatuses[geraiId].isOpen;
+    geraiStatuses[geraiId].isOpen = isOpen;
+    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
+    geraiStatuses[geraiId].lastUpdatedBy = `${adminUsername} (Admin)`;
+
+    // Reset any pending votes
+    pendingVotes[geraiId] = {
+        targetStatus: null,
+        voters: [],
+        timestamp: null
+    };
+
+    const geraiNumber = geraiId.replace('gerai', 'Gerai ');
+    return `🔧 Admin Update: ${geraiNumber} status set to: ${isOpen ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${adminUsername} (Admin)`;
+}
+
 module.exports = {
     getGeraiStatus,
     updateGeraiStatus,
     autoCloseAllGerai,
     isOperatingHours,
     addSubscriber,
-    removeSubscriber
+    removeSubscriber,
+    isAdmin,
+    adminUpdateGeraiStatus
 };

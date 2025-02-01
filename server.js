@@ -1,8 +1,8 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
-const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours, addSubscriber, removeSubscriber } = require('./function');
-const { GERAI_LIST } = require('./config');
+const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours, addSubscriber, removeSubscriber, isAdmin, adminUpdateGeraiStatus } = require('./function');
+const { GERAI_LIST, ADMIN_IDS } = require('./config');
 
 dotenv.config();
 
@@ -28,7 +28,7 @@ const patchNotes = `
 - Added notification when gerai is opened (use /subscribe to get notified)
 `;
 
-const lastUpdated = '1/2/2025 12.15 AM';
+const lastUpdated = '1/2/2025 12.53 PM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -195,6 +195,101 @@ bot.on('callback_query', async (query) => {
                 }
             );
         }, 1000);
+    } else if (action === 'show_admin_open') {
+        if (!isAdmin(query.from.id)) {
+            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+            return;
+        }
+
+        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
+            const button = { text: gerai.name, callback_data: `admin_open_${gerai.id}` };
+            acc.push([button]);
+            return acc;
+        }, []);
+
+        // Add back button
+        buttons.push([{ text: '🔙 Back to Admin Menu', callback_data: 'back_to_admin' }]);
+
+        bot.editMessageText(
+            '🟢 Select gerai to OPEN:',
+            {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: { inline_keyboard: buttons }
+            }
+        );
+    } else if (action === 'show_admin_close') {
+        if (!isAdmin(query.from.id)) {
+            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+            return;
+        }
+
+        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
+            const button = { text: gerai.name, callback_data: `admin_close_${gerai.id}` };
+            acc.push([button]);
+            return acc;
+        }, []);
+
+        // Add back button
+        buttons.push([{ text: '🔙 Back to Admin Menu', callback_data: 'back_to_admin' }]);
+
+        bot.editMessageText(
+            '🔴 Select gerai to CLOSE:',
+            {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: { inline_keyboard: buttons }
+            }
+        );
+    } else if (action === 'back_to_admin') {
+        const keyboard = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: '🟢 Open Gerai', callback_data: 'show_admin_open' },
+                        { text: '🔴 Close Gerai', callback_data: 'show_admin_close' }
+                    ]
+                ]
+            }
+        };
+
+        bot.editMessageText(
+            '🔧 *Admin Control Panel*\nSelect an action:',
+            {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: keyboard.reply_markup
+            }
+        );
+    } else if (action.startsWith('admin_open_')) {
+        if (!isAdmin(query.from.id)) {
+            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+            return;
+        }
+
+        const geraiId = action.replace('admin_open_', '');
+        const response = adminUpdateGeraiStatus(geraiId, true, query.from.username);
+        await bot.sendMessage(chatId, response);
+        
+        // Send updated status
+        setTimeout(() => {
+            bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
+        }, 500);
+    } else if (action.startsWith('admin_close_')) {
+        if (!isAdmin(query.from.id)) {
+            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+            return;
+        }
+
+        const geraiId = action.replace('admin_close_', '');
+        const response = adminUpdateGeraiStatus(geraiId, false, query.from.username);
+        await bot.sendMessage(chatId, response);
+        
+        // Send updated status
+        setTimeout(() => {
+            bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
+        }, 500);
     }
 
     // Answer the callback query to remove the loading state
@@ -249,6 +344,54 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (error) => {
     console.error('Unhandled Rejection:', error);
+});
+
+// Admin command to show options
+bot.onText(/\/admin/, (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    if (!isAdmin(userId)) {
+        bot.sendMessage(chatId, '⛔ This command is only available to administrators.');
+        return;
+    }
+
+    // Create keyboard buttons dynamically from config
+    const openButtons = GERAI_LIST.reduce((acc, gerai, index) => {
+        const button = { text: `Open ${gerai.name}`, callback_data: `admin_open_${gerai.id}` };
+        
+        // Create new row for each button
+        acc.push([button]);
+        return acc;
+    }, []);
+
+    const closeButtons = GERAI_LIST.reduce((acc, gerai, index) => {
+        const button = { text: `Close ${gerai.name}`, callback_data: `admin_close_${gerai.id}` };
+        
+        // Create new row for each button
+        acc.push([button]);
+        return acc;
+    }, []);
+
+    const keyboard = {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: '🟢 Open Gerai', callback_data: 'show_admin_open' },
+                    { text: '🔴 Close Gerai', callback_data: 'show_admin_close' }
+                ]
+            ]
+        }
+    };
+
+    bot.sendMessage(
+        chatId, 
+        '🔧 *Admin Control Panel*\nSelect an action:',
+        { 
+            parse_mode: 'Markdown',
+            reply_markup: keyboard.reply_markup 
+        }
+    );
 });
 
 app.listen(PORT, () => {

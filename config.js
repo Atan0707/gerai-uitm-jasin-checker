@@ -1,3 +1,7 @@
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 // List of all gerai
 const GERAI_LIST = [
     { id: 'gerai11', name: 'Gerai 11 - Kedai Air Belah Kanan' },
@@ -21,7 +25,14 @@ const OPERATING_HOURS = {
     end: 24    // 11.59 PM
 };
 
+// Convert comma-separated string of admin IDs to array of numbers
+const ADMIN_IDS = (process.env.ADMIN_IDS || '')
+    .split(',')
+    .map(id => parseInt(id.trim()))
+    .filter(id => !isNaN(id));
+
 module.exports = {
     GERAI_LIST,
-    OPERATING_HOURS
+    OPERATING_HOURS,
+    ADMIN_IDS
 }; 
