@@ -287,6 +287,9 @@ bot.on('callback_query', async (query) => {
         setTimeout(() => {
             bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
         }, 500);
+    } else if (action === 'subscribe') {
+        const response = addSubscriber(chatId);
+        bot.sendMessage(chatId, response);
     }
 
     // Answer the callback query to remove the loading state
