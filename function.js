@@ -69,7 +69,7 @@ function getGeraiStatus() {
         // Add pending votes information
         const pendingVote = pendingVotes[geraiId];
         const pendingInfo = pendingVote.voters.length > 0
-            ? `\n⏳ Pending ${pendingVote.targetStatus} vote: ${pendingVote.voters.length}/2`
+            ? `\n✅ Open status confirmation: ${pendingVote.voters.length}/2`
             : '';
             
         statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}${pendingInfo}\n\n`;
