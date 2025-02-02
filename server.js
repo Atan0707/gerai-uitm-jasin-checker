@@ -26,9 +26,10 @@ const patchNotes = `
 - Added Tanjung to the list
 - Added updated by who (to avoid trolling)
 - Added notification for closed gerai
+- Added button on notification to check all gerai status
 `;
 
-const lastUpdated = '2/2/2025 12.40 AM';
+const lastUpdated = '3/2/2025 1.15 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -148,14 +149,14 @@ bot.on('callback_query', async (query) => {
         );
     } else if (action === 'gerai_status') {
         bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
-    } else if (action.startsWith('update_gerai')) {
+    } else if (action.startsWith('update_')) {
         const geraiId = action.replace('update_', '');
         const username = query.from.username || 
                         `${query.from.first_name}${query.from.last_name ? ' ' + query.from.last_name : ''}`;
         
         // Pass notification callback to updateGeraiStatus
-        const response = updateGeraiStatus(geraiId, username, (targetChatId, message) => {
-            bot.sendMessage(targetChatId, message, { parse_mode: 'Markdown' });
+        const response = updateGeraiStatus(geraiId, username, (targetChatId, message, options) => {
+            bot.sendMessage(targetChatId, message, options);
         });
         
         // First send the update confirmation
@@ -290,6 +291,11 @@ bot.on('callback_query', async (query) => {
     } else if (action === 'subscribe') {
         const response = addSubscriber(chatId);
         bot.sendMessage(chatId, response);
+    } else if (action === 'check_status') {
+        const status = getGeraiStatus();
+        await bot.sendMessage(chatId, status, { parse_mode: 'Markdown' });
+        // Answer the callback query to remove the loading state
+        await bot.answerCallbackQuery(query.id);
     }
 
     // Answer the callback query to remove the loading state

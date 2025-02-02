@@ -19,15 +19,10 @@ function writeSubscriptions(subscriptions) {
     fs.writeFileSync(subscriptionsFilePath, JSON.stringify(subscriptions, null, 2));
 }
 
-// Helper function to check if current time is within operating hours
-function isOperatingHours() {
-    const now = new Date();
-    const hour = now.getHours();
-    return hour < OPERATING_HOURS.end && hour >= OPERATING_HOURS.start;
-}
+// Add at the top with other global variables
+let testingMode = false; // New global variable for testing mode
 
-// Add subscribers tracking
-let subscribers = new Set(); // Store chat IDs of subscribers
+// Add geraiStatuses initialization
 let geraiStatuses = {};
 
 // Initialize statuses
@@ -38,6 +33,16 @@ GERAI_LIST.forEach(gerai => {
         lastUpdatedBy: null 
     };
 });
+
+// Helper function to check if current time is within operating hours
+function isOperatingHours() {
+    if (testingMode) {
+        return true; // Always return true when in testing mode
+    }
+    const now = new Date();
+    const hour = now.getHours();
+    return hour < OPERATING_HOURS.end && hour >= OPERATING_HOURS.start;
+}
 
 // Add subscriber management functions
 function addSubscriber(chatId) {
@@ -110,22 +115,34 @@ function updateGeraiStatus(geraiId, username, notifyCallback) {
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
     geraiStatuses[geraiId].lastUpdatedBy = username;
 
-    const geraiNumber = geraiId.replace('gerai', 'Gerai ');
+    // Get the full gerai name from GERAI_LIST
+    const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
+    const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
 
     // Notify subscribers for both open and close status changes
     if (notifyCallback) {
         const notificationMessage = !previousStatus 
-            ? `🔔 *${geraiNumber} is now OPEN!*\nUpdated by: @${username}`
-            : `🔔 *${geraiNumber} is now CLOSED!*\nUpdated by: @${username}`;
+            ? `🔔 *${geraiName} is now OPEN!*\nUpdated by: @${username}`
+            : `🔔 *${geraiName} is now CLOSED!*\nUpdated by: @${username}`;
         
-        // Notify all subscribers
+        // Create inline keyboard for the notification
+        const notificationOptions = {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '📊 Check All Gerai Status', callback_data: 'check_status' }]
+                ]
+            }
+        };
+        
+        // Notify all subscribers with the inline keyboard
         const subscriptions = readSubscriptions();
         subscriptions.subscribers.forEach(chatId => {
-            notifyCallback(chatId, notificationMessage);
+            notifyCallback(chatId, notificationMessage, notificationOptions);
         });
     }
 
-    return `✅ ${geraiNumber} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;
+    return `✅ ${geraiName} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;
 }
 
 // Function to automatically close all gerai at midnight
@@ -157,6 +174,21 @@ function adminUpdateGeraiStatus(geraiId, isOpen, adminUsername) {
     return `🔧 Admin Update: ${geraiNumber} status set to: ${isOpen ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${adminUsername} (Admin)`;
 }
 
+// Add new functions to toggle testing mode
+function enableTestingMode() {
+    testingMode = true;
+    return '🔧 Testing mode enabled. Operating hours check bypassed.';
+}
+
+function disableTestingMode() {
+    testingMode = false;
+    return '🔧 Testing mode disabled. Operating hours check restored.';
+}
+
+function getTestingMode() {
+    return testingMode;
+}
+
 module.exports = {
     getGeraiStatus,
     updateGeraiStatus,
@@ -165,5 +197,8 @@ module.exports = {
     addSubscriber,
     removeSubscriber,
     isAdmin,
-    adminUpdateGeraiStatus
+    adminUpdateGeraiStatus,
+    enableTestingMode,
+    disableTestingMode,
+    getTestingMode
 };
