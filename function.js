@@ -21,9 +21,7 @@ function writeSubscriptions(subscriptions) {
 
 // Helper function to check if current time is within operating hours
 function isOperatingHours() {
-    const now = new Date();
-    const hour = now.getHours();
-    return hour < OPERATING_HOURS.end && hour >= OPERATING_HOURS.start;
+    return true;  // Always allow operations
 }
 
 // Add subscribers tracking
@@ -62,18 +60,7 @@ function removeSubscriber(chatId) {
 }
 
 function getGeraiStatus() {
-    // If outside operating hours, show all gerai as closed
-    if (!isOperatingHours()) {
-        let statusMessage = '⏰ *Outside Operating Hours*\nAll gerai are closed.\n\n';
-        statusMessage += `Operating Hours: ${OPERATING_HOURS.start}:00 AM - 12:00 AM\n\n`;
-        
-        GERAI_LIST.forEach(gerai => {
-            statusMessage += `${gerai.name}: 🔴 Closed\n`;
-        });
-        return statusMessage;
-    }
-
-    // Normal status display during operating hours
+    // Remove the operating hours check
     let statusMessage = '📊 *Current Gerai Statuses*\n\n';
     
     for (const [geraiId, status] of Object.entries(geraiStatuses)) {
@@ -96,11 +83,7 @@ function getGeraiStatus() {
 }
 
 function updateGeraiStatus(geraiId, username, notifyCallback) {
-    // Check if within operating hours
-    if (!isOperatingHours()) {
-        return '⛔ Updates are disabled outside operating hours (12 AM - 7 AM).\nAll gerai are closed during this time.';
-    }
-
+    // Remove the operating hours check
     if (!geraiStatuses[geraiId]) {
         return 'Invalid gerai selected';
     }
@@ -129,15 +112,9 @@ function updateGeraiStatus(geraiId, username, notifyCallback) {
 }
 
 // Function to automatically close all gerai at midnight
-function autoCloseAllGerai() {
-    for (const gerai in geraiStatuses) {
-        if (geraiStatuses[gerai].isOpen) {
-            geraiStatuses[gerai].isOpen = false;
-            geraiStatuses[gerai].lastUpdated = new Date().toLocaleString();
-            geraiStatuses[gerai].lastUpdatedBy = 'System (Auto-close)';
-        }
-    }
-}
+// function autoCloseAllGerai() {
+//     ... remove or comment out this function
+// }
 
 function isAdmin(userId) {
     return ADMIN_IDS.includes(userId);
@@ -160,7 +137,7 @@ function adminUpdateGeraiStatus(geraiId, isOpen, adminUsername) {
 module.exports = {
     getGeraiStatus,
     updateGeraiStatus,
-    autoCloseAllGerai,
+    // autoCloseAllGerai,
     isOperatingHours,
     addSubscriber,
     removeSubscriber,
