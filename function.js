@@ -112,17 +112,17 @@ function updateGeraiStatus(geraiId, username, notifyCallback) {
 
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');
 
-    // If gerai is newly opened, notify subscribers
-    if (!previousStatus && geraiStatuses[geraiId].isOpen) {
-        const notificationMessage = `🔔 *${geraiNumber} is now OPEN!*\nUpdated by: @${username}`;
+    // Notify subscribers for both open and close status changes
+    if (notifyCallback) {
+        const notificationMessage = !previousStatus 
+            ? `🔔 *${geraiNumber} is now OPEN!*\nUpdated by: @${username}`
+            : `🔔 *${geraiNumber} is now CLOSED!*\nUpdated by: @${username}`;
         
         // Notify all subscribers
-        if (notifyCallback) {
-            const subscriptions = readSubscriptions();
-            subscriptions.subscribers.forEach(chatId => {
-                notifyCallback(chatId, notificationMessage);
-            });
-        }
+        const subscriptions = readSubscriptions();
+        subscriptions.subscribers.forEach(chatId => {
+            notifyCallback(chatId, notificationMessage);
+        });
     }
 
     return `✅ ${geraiNumber} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;

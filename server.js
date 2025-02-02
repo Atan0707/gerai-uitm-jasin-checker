@@ -23,10 +23,12 @@ const bot = new TelegramBot(token, {
 });
 
 const patchNotes = `
-- Removed vote system
+- Added Tanjung to the list
+- Added updated by who (to avoid trolling)
+- Added notification for closed gerai
 `;
 
-const lastUpdated = '2/2/2025 12.27 AM';
+const lastUpdated = '2/2/2025 12.40 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
