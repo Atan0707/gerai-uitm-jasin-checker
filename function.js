@@ -85,8 +85,11 @@ function getGeraiStatus() {
         const updateInfo = status.lastUpdated 
             ? `\nLast Updated: ${status.lastUpdated}`
             : '\nNo updates yet';
+        const updatedBy = status.lastUpdatedBy
+            ? `\nUpdated by: @${status.lastUpdatedBy}`
+            : '';
             
-        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}\n\n`;
+        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}\n\n`;
     }
     
     return statusMessage;
