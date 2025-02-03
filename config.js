@@ -15,6 +15,9 @@ const GERAI_LIST = [
     { id: 'gerai19', name: 'Gerai 19 - Kedai Ayam Penyet' },
     { id: 'gerai20', name: 'Gerai 20 - Kedai Air Belah Kiri' },
     { id: 'gerai23', name: 'Gerai 23 - Kedai Runcit Medan' },
+    { id: 'gerai24', name: 'Gerai 24 - Kedai Saleh'},
+    { id: 'gerai25', name: 'Gerai 25 - Kedai waffle'},
+    { id: 'gerai30', name: 'Gerai 30 - Gerai Ayam Gepuk'},
     { id: 'tanjung', name: 'Tanjung'}
     // To add a new gerai, just add a new object here
     // { id: 'gerai16', name: 'Gerai 16' },

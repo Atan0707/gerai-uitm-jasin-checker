@@ -27,9 +27,10 @@ const patchNotes = `
 - Added updated by who (to avoid trolling)
 - Added notification for closed gerai
 - Added button on notification to check all gerai status
+- Added gerai ayam gepuk, kedai saleh, kedai waffle
 `;
 
-const lastUpdated = '3/2/2025 1.15 AM';
+const lastUpdated = '3/2/2025 12.58 PM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
