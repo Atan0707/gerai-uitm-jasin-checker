@@ -1,7 +1,7 @@
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
-const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours, addSubscriber, removeSubscriber, isAdmin, adminUpdateGeraiStatus } = require('./function');
+const { getGeraiStatus, updateGeraiStatus, autoCloseAllGerai, isOperatingHours, addSubscriber, removeSubscriber, isAdmin, adminUpdateGeraiStatus, getGeraiStatusUpdateButtons } = require('./function');
 const { GERAI_LIST, ADMIN_IDS } = require('./config');
 
 dotenv.config();
@@ -86,12 +86,48 @@ bot.onText(/\/start/, (msg) => {
     );
 });
 
-bot.on('callback_query', async (query) => {
-    const chatId = query.message.chat.id;
-    const action = query.data;
-    const username = query.from.username || `${query.from.first_name} ${query.from.last_name || ''}`;
+bot.on('callback_query', async (callbackQuery) => {
+    const data = callbackQuery.data;
+    const chatId = callbackQuery.message.chat.id;
+    const messageId = callbackQuery.message.message_id;
+    const username = callbackQuery.from.username || 'Anonymous';
 
-    if (action === 'show_update_options') {
+    if (data.startsWith('update_')) {
+        const geraiId = data.replace('update_', '');
+        // Show Open/Close buttons for the selected gerai
+        const buttons = getGeraiStatusUpdateButtons(geraiId);
+        await bot.editMessageText(buttons.text, {
+            chat_id: chatId,
+            message_id: messageId,
+            reply_markup: buttons.reply_markup,
+            parse_mode: buttons.parse_mode
+        });
+    } else if (data.startsWith('open_') || data.startsWith('close_')) {
+        const geraiId = data.substring(data.indexOf('_') + 1);
+        const isOpen = data.startsWith('open_');
+        
+        const response = updateGeraiStatus(geraiId, username, (targetChatId, message, options) => {
+            bot.sendMessage(targetChatId, message, options);
+        }, isOpen);
+
+        await bot.answerCallbackQuery(callbackQuery.id, {
+            text: isOpen ? '🟢 Opening gerai...' : '🔴 Closing gerai...',
+            show_alert: false
+        });
+        
+        // Show success message and return to status menu
+        await bot.editMessageText(response, {
+            chat_id: chatId,
+            message_id: messageId,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '📊 Check Status', callback_data: 'check_status' }],
+                    [{ text: '🔄 Update Another Gerai', callback_data: 'show_update_options' }]
+                ]
+            }
+        });
+    } else if (data === 'show_update_options') {
         // Create keyboard buttons dynamically from config
         const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
             const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
@@ -118,11 +154,11 @@ bot.on('callback_query', async (query) => {
             'Select a gerai to update its status:',
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: messageId,
                 reply_markup: updateKeyboard.reply_markup
             }
         );
-    } else if (action === 'back_to_main') {
+    } else if (data === 'back_to_main') {
         // Return to main menu
         const mainKeyboard = {
             reply_markup: {
@@ -144,59 +180,15 @@ bot.on('callback_query', async (query) => {
             'UiTM Jasin Gerai Checker 🏪\n\nApp last updated: ' + lastUpdated + '\n\nPatch notes:' + patchNotes,
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: messageId,
                 reply_markup: mainKeyboard.reply_markup
             }
         );
-    } else if (action === 'gerai_status') {
+    } else if (data === 'gerai_status') {
         bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
-    } else if (action.startsWith('update_')) {
-        const geraiId = action.replace('update_', '');
-        const username = query.from.username || 
-                        `${query.from.first_name}${query.from.last_name ? ' ' + query.from.last_name : ''}`;
-        
-        // Pass notification callback to updateGeraiStatus
-        const response = updateGeraiStatus(geraiId, username, (targetChatId, message, options) => {
-            bot.sendMessage(targetChatId, message, options);
-        });
-        
-        // First send the update confirmation
-        await bot.sendMessage(chatId, response);
-        
-        // Then automatically show the current status of all gerai
-        // setTimeout(() => {
-        //     bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
-        // }, 500);
-
-        // Create dynamic keyboard again for the update menu
-        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
-            const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
-            
-            // Create new row every 2 buttons
-            if (index % 2 === 0) {
-                acc.push([button]);
-            } else {
-                acc[acc.length - 1].push(button);
-            }
-            return acc;
-        }, []);
-
-        // Add back button
-        buttons.push([{ text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }]);
-        
-        setTimeout(() => {
-            bot.editMessageText(
-                'Select another gerai to update its status:',
-                {
-                    chat_id: chatId,
-                    message_id: query.message.message_id,
-                    reply_markup: { inline_keyboard: buttons }
-                }
-            );
-        }, 1000);
-    } else if (action === 'show_admin_open') {
-        if (!isAdmin(query.from.id)) {
-            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+    } else if (data === 'show_admin_open') {
+        if (!isAdmin(callbackQuery.from.id)) {
+            bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
             return;
         }
 
@@ -213,13 +205,13 @@ bot.on('callback_query', async (query) => {
             '🟢 Select gerai to OPEN:',
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: messageId,
                 reply_markup: { inline_keyboard: buttons }
             }
         );
-    } else if (action === 'show_admin_close') {
-        if (!isAdmin(query.from.id)) {
-            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+    } else if (data === 'show_admin_close') {
+        if (!isAdmin(callbackQuery.from.id)) {
+            bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
             return;
         }
 
@@ -236,11 +228,11 @@ bot.on('callback_query', async (query) => {
             '🔴 Select gerai to CLOSE:',
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: messageId,
                 reply_markup: { inline_keyboard: buttons }
             }
         );
-    } else if (action === 'back_to_admin') {
+    } else if (data === 'back_to_admin') {
         const keyboard = {
             reply_markup: {
                 inline_keyboard: [
@@ -256,51 +248,51 @@ bot.on('callback_query', async (query) => {
             '🔧 *Admin Control Panel*\nSelect an action:',
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: messageId,
                 parse_mode: 'Markdown',
                 reply_markup: keyboard.reply_markup
             }
         );
-    } else if (action.startsWith('admin_open_')) {
-        if (!isAdmin(query.from.id)) {
-            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+    } else if (data.startsWith('admin_open_')) {
+        if (!isAdmin(callbackQuery.from.id)) {
+            bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
             return;
         }
 
-        const geraiId = action.replace('admin_open_', '');
-        const response = adminUpdateGeraiStatus(geraiId, true, query.from.username);
+        const geraiId = data.replace('admin_open_', '');
+        const response = adminUpdateGeraiStatus(geraiId, true, callbackQuery.from.username);
         await bot.sendMessage(chatId, response);
         
         // Send updated status
         setTimeout(() => {
             bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
         }, 500);
-    } else if (action.startsWith('admin_close_')) {
-        if (!isAdmin(query.from.id)) {
-            bot.answerCallbackQuery(query.id, { text: '⛔ Admin access required' });
+    } else if (data.startsWith('admin_close_')) {
+        if (!isAdmin(callbackQuery.from.id)) {
+            bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
             return;
         }
 
-        const geraiId = action.replace('admin_close_', '');
-        const response = adminUpdateGeraiStatus(geraiId, false, query.from.username);
+        const geraiId = data.replace('admin_close_', '');
+        const response = adminUpdateGeraiStatus(geraiId, false, callbackQuery.from.username);
         await bot.sendMessage(chatId, response);
         
         // Send updated status
         setTimeout(() => {
             bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
         }, 500);
-    } else if (action === 'subscribe') {
+    } else if (data === 'subscribe') {
         const response = addSubscriber(chatId);
         bot.sendMessage(chatId, response);
-    } else if (action === 'check_status') {
+    } else if (data === 'check_status') {
         const status = getGeraiStatus();
         await bot.sendMessage(chatId, status, { parse_mode: 'Markdown' });
         // Answer the callback query to remove the loading state
-        await bot.answerCallbackQuery(query.id);
+        await bot.answerCallbackQuery(callbackQuery.id);
     }
 
     // Answer the callback query to remove the loading state
-    bot.answerCallbackQuery(query.id);
+    bot.answerCallbackQuery(callbackQuery.id);
 });
 
 // Add notification commands

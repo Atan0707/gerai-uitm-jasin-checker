@@ -100,7 +100,27 @@ function getGeraiStatus() {
     return statusMessage;
 }
 
-function updateGeraiStatus(geraiId, username, notifyCallback) {
+function getGeraiStatusUpdateButtons(geraiId) {
+    const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
+    const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
+    
+    return {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: '🟢 Open', callback_data: `open_${geraiId}` },
+                    { text: '🔴 Close', callback_data: `close_${geraiId}` }
+                ],
+                [{ text: '⬅️ Back to Gerai List', callback_data: 'update_status' }]
+            ]
+        },
+        parse_mode: 'Markdown',
+        text: `*Select status for ${geraiName}:*\nCurrent status: ${geraiStatuses[geraiId].isOpen ? '🟢 Open' : '🔴 Closed'}`
+    };
+}
+
+// Modify updateGeraiStatus to accept specific status
+function updateGeraiStatus(geraiId, username, notifyCallback, forceStatus = null) {
     // Check if within operating hours
     if (!isOperatingHours()) {
         return '⛔ Updates are disabled outside operating hours (12 AM - 7 AM).\nAll gerai are closed during this time.';
@@ -111,7 +131,15 @@ function updateGeraiStatus(geraiId, username, notifyCallback) {
     }
 
     const previousStatus = geraiStatuses[geraiId].isOpen;
-    geraiStatuses[geraiId].isOpen = !previousStatus;
+    // Use forceStatus if provided, otherwise toggle the current status
+    const newStatus = forceStatus !== null ? forceStatus : !previousStatus;
+    
+    // If the status isn't changing, return early
+    if (previousStatus === newStatus) {
+        return `⚠️ ${geraiName} is already ${newStatus ? 'Open 🟢' : 'Closed 🔴'}`;
+    }
+
+    geraiStatuses[geraiId].isOpen = newStatus;
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
     geraiStatuses[geraiId].lastUpdatedBy = username;
 
@@ -200,5 +228,6 @@ module.exports = {
     adminUpdateGeraiStatus,
     enableTestingMode,
     disableTestingMode,
-    getTestingMode
+    getTestingMode,
+    getGeraiStatusUpdateButtons
 };
