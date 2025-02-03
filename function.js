@@ -130,11 +130,15 @@ function updateGeraiStatus(geraiId, username, notifyCallback, forceStatus = null
         return 'Invalid gerai selected';
     }
 
+    // Get the full gerai name from GERAI_LIST first
+    const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
+    const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
+
     const previousStatus = geraiStatuses[geraiId].isOpen;
     // Use forceStatus if provided, otherwise toggle the current status
     const newStatus = forceStatus !== null ? forceStatus : !previousStatus;
     
-    // If the status isn't changing, return early
+    // If the status isn't changing, return early with a message
     if (previousStatus === newStatus) {
         return `⚠️ ${geraiName} is already ${newStatus ? 'Open 🟢' : 'Closed 🔴'}`;
     }
@@ -143,13 +147,9 @@ function updateGeraiStatus(geraiId, username, notifyCallback, forceStatus = null
     geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
     geraiStatuses[geraiId].lastUpdatedBy = username;
 
-    // Get the full gerai name from GERAI_LIST
-    const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
-    const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
-
     // Notify subscribers for both open and close status changes
     if (notifyCallback) {
-        const notificationMessage = !previousStatus 
+        const notificationMessage = newStatus 
             ? `🔔 *${geraiName} is now OPEN!*\nUpdated by: @${username}`
             : `🔔 *${geraiName} is now CLOSED!*\nUpdated by: @${username}`;
         
@@ -170,7 +170,7 @@ function updateGeraiStatus(geraiId, username, notifyCallback, forceStatus = null
         });
     }
 
-    return `✅ ${geraiName} status updated to: ${!previousStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;
+    return `✅ ${geraiName} status updated to: ${newStatus ? 'Open 🟢' : 'Closed 🔴'}\nUpdated by: @${username}`;
 }
 
 // Function to automatically close all gerai at midnight
