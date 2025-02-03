@@ -131,11 +131,11 @@ function getGeraiStatusUpdateButtons(geraiId) {
                     { text: '🟢 Open', callback_data: `open_${geraiId}` },
                     { text: '🔴 Close', callback_data: `close_${geraiId}` }
                 ],
-                [{ text: '⬅️ Back to Gerai List', callback_data: 'update_status' }]
+                [{ text: '⬅️ Back to Gerai List', callback_data: 'show_update_options' }]
             ]
         },
         parse_mode: 'Markdown',
-        text: `*Select status for ${geraiName}:*\nCurrent status: ${geraiStatuses[geraiId].isOpen ? '🟢 Open' : '🔴 Closed'}`
+        text: `*Select status for ${geraiName}:*\nCurrent status: ${geraiStatuses[geraiId]?.isOpen ? '🟢 Open' : '🔴 Closed'}`
     };
 }
 

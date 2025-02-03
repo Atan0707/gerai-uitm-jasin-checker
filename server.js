@@ -35,7 +35,7 @@ Here are some great tech clubs in UiTM Jasin to consider:
 - ISEC
 `;
 
-const lastUpdated = '3/2/2025 6.58 PM';
+const lastUpdated = '3/2/2025 10.49 PM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -96,6 +96,35 @@ bot.on('callback_query', async (callbackQuery) => {
     const chatId = callbackQuery.message.chat.id;
     const messageId = callbackQuery.message.message_id;
     const username = callbackQuery.from.username || 'Anonymous';
+
+    if (data === 'back_to_main') {
+        // Return to main menu
+        const mainKeyboard = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: 'Update Gerai Status 🔄', callback_data: 'show_update_options' }
+                    ],
+                    [
+                        { text: '📊 Check All Gerai Status', callback_data: 'gerai_status' }
+                    ],
+                    [
+                        { text: '🔔 Subscribe to Updates', callback_data: 'subscribe' }
+                    ]
+                ]
+            }
+        };
+        
+        await bot.editMessageText(
+            'UiTM Jasin Gerai Checker 🏪\n\nApp last updated: ' + lastUpdated + '\n\nPatch notes:' + patchNotes,
+            {
+                chat_id: chatId,
+                message_id: messageId,
+                reply_markup: mainKeyboard.reply_markup
+            }
+        );
+        return; // Add return here to prevent further execution
+    }
 
     if (data.startsWith('update_')) {
         const geraiId = data.replace('update_', '');
@@ -161,32 +190,6 @@ bot.on('callback_query', async (callbackQuery) => {
                 chat_id: chatId,
                 message_id: messageId,
                 reply_markup: updateKeyboard.reply_markup
-            }
-        );
-    } else if (data === 'back_to_main') {
-        // Return to main menu
-        const mainKeyboard = {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: 'Update Gerai Status 🔄', callback_data: 'show_update_options' }
-                    ],
-                    [
-                        { text: '📊 Check All Gerai Status', callback_data: 'gerai_status' }
-                    ],
-                    [
-                        { text: '🔔 Subscribe to Updates', callback_data: 'subscribe' }
-                    ]
-                ]
-            }
-        };
-        
-        bot.editMessageText(
-            'UiTM Jasin Gerai Checker 🏪\n\nApp last updated: ' + lastUpdated + '\n\nPatch notes:' + patchNotes,
-            {
-                chat_id: chatId,
-                message_id: messageId,
-                reply_markup: mainKeyboard.reply_markup
             }
         );
     } else if (data === 'gerai_status' || data === 'check_status') {
