@@ -164,7 +164,14 @@ function updateGeraiStatus(geraiId, username, notifyCallback, forceStatus = null
     }
 
     geraiStatuses[geraiId].isOpen = newStatus;
-    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
+    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
     geraiStatuses[geraiId].lastUpdatedBy = username;
 
     // Notify subscribers for both open and close status changes
@@ -198,7 +205,14 @@ function autoCloseAllGerai() {
     for (const gerai in geraiStatuses) {
         if (geraiStatuses[gerai].isOpen) {
             geraiStatuses[gerai].isOpen = false;
-            geraiStatuses[gerai].lastUpdated = new Date().toLocaleString();
+            geraiStatuses[gerai].lastUpdated = new Date().toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
             geraiStatuses[gerai].lastUpdatedBy = 'System (Auto-close)';
         }
     }
@@ -215,7 +229,14 @@ function adminUpdateGeraiStatus(geraiId, isOpen, adminUsername) {
 
     const previousStatus = geraiStatuses[geraiId].isOpen;
     geraiStatuses[geraiId].isOpen = isOpen;
-    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString();
+    geraiStatuses[geraiId].lastUpdated = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
     geraiStatuses[geraiId].lastUpdatedBy = `${adminUsername} (Admin)`;
 
     const geraiNumber = geraiId.replace('gerai', 'Gerai ');

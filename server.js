@@ -26,6 +26,7 @@ const patchNotes = `
 - Added gerai ayam gepuk, kedai saleh, kedai waffle, and Tanjung to the list
 - Added updated by who (thanks for contributing!)
 - Added open and close button on gerai status update
+- Fix date format
 
 Daily Tip:
 If you're looking for development tips, my best advice is to join a tech club and truly commit. That means actively participating, taking initiative, and not just waiting for tasks to be assigned. Trust the process.
