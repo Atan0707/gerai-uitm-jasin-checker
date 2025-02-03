@@ -75,7 +75,17 @@ function getGeraiStatus() {
         GERAI_LIST.forEach(gerai => {
             statusMessage += `${gerai.name}: 🔴 Closed\n`;
         });
-        return statusMessage;
+        return {
+            text: statusMessage,
+            options: {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔄 Update Gerai Status', callback_data: 'show_update_options' }]
+                    ]
+                }
+            }
+        };
     }
 
     // Normal status display during operating hours
@@ -97,7 +107,17 @@ function getGeraiStatus() {
         statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}\n\n`;
     }
     
-    return statusMessage;
+    return {
+        text: statusMessage,
+        options: {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔄 Update Gerai Status', callback_data: 'show_update_options' }]
+                ]
+            }
+        }
+    };
 }
 
 function getGeraiStatusUpdateButtons(geraiId) {

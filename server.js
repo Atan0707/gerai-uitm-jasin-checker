@@ -23,14 +23,12 @@ const bot = new TelegramBot(token, {
 });
 
 const patchNotes = `
-- Added Tanjung to the list
-- Added updated by who (to avoid trolling)
-- Added notification for closed gerai
-- Added button on notification to check all gerai status
-- Added gerai ayam gepuk, kedai saleh, kedai waffle
+- Added gerai ayam gepuk, kedai saleh, kedai waffle, and Tanjung to the list
+- Added updated by who (thanks for contributing!)
+- Added open and close button on gerai status update
 `;
 
-const lastUpdated = '3/2/2025 12.58 PM';
+const lastUpdated = '3/2/2025 6.58 PM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -184,8 +182,9 @@ bot.on('callback_query', async (callbackQuery) => {
                 reply_markup: mainKeyboard.reply_markup
             }
         );
-    } else if (data === 'gerai_status') {
-        bot.sendMessage(chatId, getGeraiStatus(), { parse_mode: 'Markdown' });
+    } else if (data === 'gerai_status' || data === 'check_status') {
+        const status = getGeraiStatus();
+        bot.sendMessage(chatId, status.text, status.options);
     } else if (data === 'show_admin_open') {
         if (!isAdmin(callbackQuery.from.id)) {
             bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
@@ -284,11 +283,6 @@ bot.on('callback_query', async (callbackQuery) => {
     } else if (data === 'subscribe') {
         const response = addSubscriber(chatId);
         bot.sendMessage(chatId, response);
-    } else if (data === 'check_status') {
-        const status = getGeraiStatus();
-        await bot.sendMessage(chatId, status, { parse_mode: 'Markdown' });
-        // Answer the callback query to remove the loading state
-        await bot.answerCallbackQuery(callbackQuery.id);
     }
 
     // Answer the callback query to remove the loading state
