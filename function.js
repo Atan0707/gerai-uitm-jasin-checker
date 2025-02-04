@@ -20,7 +20,7 @@ function writeSubscriptions(subscriptions) {
 }
 
 // Add at the top with other global variables
-let testingMode = true; // New global variable for testing mode
+let testingMode = false; // New global variable for testing mode
 
 // Add geraiStatuses initialization
 let geraiStatuses = {};

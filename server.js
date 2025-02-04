@@ -23,9 +23,10 @@ const bot = new TelegramBot(token, {
 });
 
 const patchNotes = `
+- Added a close button to the status message
 `;
 
-const lastUpdated = '5/2/2025 1.35 AM';
+const lastUpdated = '5/2/2025 2.08 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -224,6 +225,13 @@ bot.on('callback_query', async (callbackQuery) => {
         );
     } else if (data === 'gerai_status' || data === 'check_status') {
         const status = getGeraiStatus();
+        
+        // If it's a refresh (check_status), delete the old message first
+        if (data === 'check_status') {
+            await bot.deleteMessage(chatId, messageId);
+        }
+        
+        // Send new status message
         bot.sendMessage(chatId, status.text, status.options);
     } else if (data === 'show_admin_open' || data === 'show_admin_close') {
         if (!isAdmin(callbackQuery.from.id)) {
