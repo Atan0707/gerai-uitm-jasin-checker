@@ -128,7 +128,8 @@ function getGeraiStatus() {
             reply_markup: {
                 inline_keyboard: [
                     [{ text: '🔄 Refresh Status', callback_data: 'check_status' }],
-                    [{ text: '✏️ Update Status', callback_data: 'show_update_options' }]
+                    [{ text: '✏️ Update Status', callback_data: 'show_update_options' }],
+                    [{ text: '❌ Close', callback_data: 'remove_message' }]
                 ]
             }
         }

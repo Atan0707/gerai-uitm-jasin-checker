@@ -90,6 +90,13 @@ bot.on('callback_query', async (callbackQuery) => {
     const messageId = callbackQuery.message.message_id;
     const username = callbackQuery.from.username || 'Anonymous';
 
+    if (data === 'remove_message') {
+        // Delete the message when close is clicked
+        await bot.deleteMessage(chatId, messageId);
+        await bot.answerCallbackQuery(callbackQuery.id);
+        return;
+    }
+
     if (data === 'back_to_main') {
         // Return to main menu
         const mainKeyboard = {
