@@ -23,20 +23,9 @@ const bot = new TelegramBot(token, {
 });
 
 const patchNotes = `
-- Added gerai ayam gepuk, kedai saleh, kedai waffle, and Tanjung to the list
-- Added updated by who (thanks for contributing!)
-- Added open and close button on gerai status update
-- Fix date format
-
-Daily Tip:
-If you're looking for development tips, my best advice is to join a tech club and truly commit. That means actively participating, taking initiative, and not just waiting for tasks to be assigned. Trust the process.
-
-Here are some great tech clubs in UiTM Jasin to consider:
-- UiTM Blockchain Association (https://t.me/+N8jDDGAYQq5mMWU1) 
-- ISEC
 `;
 
-const lastUpdated = '3/2/2025 10.49 PM';
+const lastUpdated = '5/2/2025 1.35 AM';
 
 // Schedule auto-close at midnight
 function scheduleAutoClose() {
@@ -80,6 +69,9 @@ bot.onText(/\/start/, (msg) => {
                 ],
                 [
                     { text: '🔔 Subscribe to Updates', callback_data: 'subscribe' }
+                ],
+                [
+                    { text: '📝 Give Feedback', url: 'https://forms.gle/QLhhJUapcNyVqEem7' }
                 ]
             ]
         }
@@ -163,18 +155,48 @@ bot.on('callback_query', async (callbackQuery) => {
             }
         });
     } else if (data === 'show_update_options') {
-        // Create keyboard buttons dynamically from config
-        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
+        // Split gerai by location
+        const medanKuliahGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kuliah');
+        const medanKolejGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kolej');
+        const pppGerai = GERAI_LIST.filter(gerai => gerai.location === 'ppp');
+        
+        const buttons = [];
+        
+        // Add Medan Kuliah section
+        buttons.push([{ text: '📍 MEDAN KULIAH', callback_data: 'dummy_action' }]);
+        medanKuliahGerai.reduce((acc, gerai, index) => {
             const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
             
             // Create new row every 2 buttons
             if (index % 2 === 0) {
-                acc.push([button]);
+                buttons.push([button]);
             } else {
-                acc[acc.length - 1].push(button);
+                buttons[buttons.length - 1].push(button);
             }
             return acc;
         }, []);
+        
+        // Add Medan Kolej section
+        buttons.push([{ text: '📍 MEDAN KOLEJ', callback_data: 'dummy_action' }]);
+        medanKolejGerai.reduce((acc, gerai, index) => {
+            const button = { text: gerai.name, callback_data: `update_${gerai.id}` };
+            
+            // Create new row every 2 buttons
+            if (index % 2 === 0) {
+                buttons.push([button]);
+            } else {
+                buttons[buttons.length - 1].push(button);
+            }
+            return acc;
+        }, []);
+
+        // Add PPP section
+        if (pppGerai.length > 0) {
+            buttons.push([{ text: '📍 PUSAT PERSATUAN PELAJAR (PPP)', callback_data: 'dummy_action' }]);
+            pppGerai.forEach(gerai => {
+                buttons.push([{ text: gerai.name, callback_data: `update_${gerai.id}` }]);
+            });
+        }
 
         // Add back button
         buttons.push([{ text: '🔙 Back to Main Menu', callback_data: 'back_to_main' }]);
@@ -196,46 +218,44 @@ bot.on('callback_query', async (callbackQuery) => {
     } else if (data === 'gerai_status' || data === 'check_status') {
         const status = getGeraiStatus();
         bot.sendMessage(chatId, status.text, status.options);
-    } else if (data === 'show_admin_open') {
+    } else if (data === 'show_admin_open' || data === 'show_admin_close') {
         if (!isAdmin(callbackQuery.from.id)) {
             bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
             return;
         }
 
-        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
-            const button = { text: gerai.name, callback_data: `admin_open_${gerai.id}` };
-            acc.push([button]);
-            return acc;
-        }, []);
+        const prefix = data === 'show_admin_open' ? 'admin_open_' : 'admin_close_';
+        const medanKuliahGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kuliah');
+        const medanKolejGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kolej');
+        const pppGerai = GERAI_LIST.filter(gerai => gerai.location === 'ppp');
+        
+        const buttons = [];
+        
+        // Add Medan Kuliah section
+        buttons.push([{ text: '📍 MEDAN KULIAH', callback_data: 'dummy_action' }]);
+        medanKuliahGerai.forEach(gerai => {
+            buttons.push([{ text: gerai.name, callback_data: `${prefix}${gerai.id}` }]);
+        });
+        
+        // Add Medan Kolej section
+        buttons.push([{ text: '📍 MEDAN KOLEJ', callback_data: 'dummy_action' }]);
+        medanKolejGerai.forEach(gerai => {
+            buttons.push([{ text: gerai.name, callback_data: `${prefix}${gerai.id}` }]);
+        });
 
-        // Add back button
-        buttons.push([{ text: '🔙 Back to Admin Menu', callback_data: 'back_to_admin' }]);
-
-        bot.editMessageText(
-            '🟢 Select gerai to OPEN:',
-            {
-                chat_id: chatId,
-                message_id: messageId,
-                reply_markup: { inline_keyboard: buttons }
-            }
-        );
-    } else if (data === 'show_admin_close') {
-        if (!isAdmin(callbackQuery.from.id)) {
-            bot.answerCallbackQuery(callbackQuery.id, { text: '⛔ Admin access required' });
-            return;
+        // Add PPP section
+        if (pppGerai.length > 0) {
+            buttons.push([{ text: '📍 PUSAT PERSATUAN PELAJAR (PPP)', callback_data: 'dummy_action' }]);
+            pppGerai.forEach(gerai => {
+                buttons.push([{ text: gerai.name, callback_data: `${prefix}${gerai.id}` }]);
+            });
         }
 
-        const buttons = GERAI_LIST.reduce((acc, gerai, index) => {
-            const button = { text: gerai.name, callback_data: `admin_close_${gerai.id}` };
-            acc.push([button]);
-            return acc;
-        }, []);
-
         // Add back button
         buttons.push([{ text: '🔙 Back to Admin Menu', callback_data: 'back_to_admin' }]);
 
         bot.editMessageText(
-            '🔴 Select gerai to CLOSE:',
+            data === 'show_admin_open' ? '🟢 Select gerai to OPEN:' : '🔴 Select gerai to CLOSE:',
             {
                 chat_id: chatId,
                 message_id: messageId,

@@ -20,7 +20,7 @@ function writeSubscriptions(subscriptions) {
 }
 
 // Add at the top with other global variables
-let testingMode = false; // New global variable for testing mode
+let testingMode = true; // New global variable for testing mode
 
 // Add geraiStatuses initialization
 let geraiStatuses = {};
@@ -67,53 +67,68 @@ function removeSubscriber(chatId) {
 }
 
 function getGeraiStatus() {
-    // If outside operating hours, show all gerai as closed
-    if (!isOperatingHours()) {
-        let statusMessage = '⏰ *Outside Operating Hours*\nAll gerai are closed.\n\n';
-        statusMessage += `Operating Hours: ${OPERATING_HOURS.start}:00 AM - 12:00 AM\n\n`;
-        
-        GERAI_LIST.forEach(gerai => {
-            statusMessage += `${gerai.name}: 🔴 Closed\n`;
-        });
-        return {
-            text: statusMessage,
-            options: {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '🔄 Update Gerai Status', callback_data: 'show_update_options' }]
-                    ]
-                }
-            }
-        };
-    }
-
-    // Normal status display during operating hours
-    let statusMessage = '📊 *Current Gerai Statuses*\n\n';
+    let status = '';
     
-    for (const [geraiId, status] of Object.entries(geraiStatuses)) {
-        const geraiInfo = GERAI_LIST.find(g => g.id === geraiId);
-        const geraiName = geraiInfo ? geraiInfo.name : geraiId.replace('gerai', 'Gerai ');
+    // Group gerai by location
+    const medanKuliahGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kuliah');
+    const medanKolejGerai = GERAI_LIST.filter(gerai => gerai.location === 'medan_kolej');
+    const pppGerai = GERAI_LIST.filter(gerai => gerai.location === 'ppp');
+    
+    // Add Medan Kuliah section
+    status += '*📍 MEDAN KULIAH*\n';
+    medanKuliahGerai.forEach(gerai => {
+        const geraiStatus = geraiStatuses[gerai.id] || {};
+        const isOpen = geraiStatus.isOpen || false;
+        const updatedBy = geraiStatus.lastUpdatedBy ? `@${geraiStatus.lastUpdatedBy}` : '-';
+        const lastUpdate = geraiStatus.lastUpdated || '-';
         
-        const statusEmoji = status.isOpen ? '🟢' : '🔴';
-        const statusText = status.isOpen ? 'Open' : 'Closed';
-        const updateInfo = status.lastUpdated 
-            ? `\nLast Updated: ${status.lastUpdated}`
-            : '\nNo updates yet';
-        const updatedBy = status.lastUpdatedBy
-            ? `\nUpdated by: @${status.lastUpdatedBy}`
-            : '';
+        status += `${isOpen ? '🟢' : '🔴'} ${gerai.name}\n`;
+        status += `Status: ${isOpen ? 'Open' : 'Closed'}\n`;
+        status += `Updated by: ${updatedBy}\n`;
+        status += `Last update: ${lastUpdate}\n\n`;
+    });
+    
+    // Add Medan Kolej section
+    status += '\n*📍 MEDAN KOLEJ*\n';
+    medanKolejGerai.forEach(gerai => {
+        const geraiStatus = geraiStatuses[gerai.id] || {};
+        const isOpen = geraiStatus.isOpen || false;
+        const updatedBy = geraiStatus.lastUpdatedBy ? `@${geraiStatus.lastUpdatedBy}` : '-';
+        const lastUpdate = geraiStatus.lastUpdated || '-';
+        
+        status += `${isOpen ? '🟢' : '🔴'} ${gerai.name}\n`;
+        status += `Status: ${isOpen ? 'Open' : 'Closed'}\n`;
+        status += `Updated by: ${updatedBy}\n`;
+        status += `Last update: ${lastUpdate}\n\n`;
+    });
+    
+    // Add PPP section if there are any PPP gerai
+    if (pppGerai.length > 0) {
+        status += '\n*📍 PUSAT PERSATUAN PELAJAR (PPP)*\n';
+        pppGerai.forEach(gerai => {
+            const geraiStatus = geraiStatuses[gerai.id] || {};
+            const isOpen = geraiStatus.isOpen || false;
+            const updatedBy = geraiStatus.lastUpdatedBy ? `@${geraiStatus.lastUpdatedBy}` : '-';
+            const lastUpdate = geraiStatus.lastUpdated || '-';
             
-        statusMessage += `${geraiName}: ${statusEmoji} ${statusText}${updateInfo}${updatedBy}\n\n`;
+            status += `${isOpen ? '🟢' : '🔴'} ${gerai.name}\n`;
+            status += `Status: ${isOpen ? 'Open' : 'Closed'}\n`;
+            status += `Updated by: ${updatedBy}\n`;
+            status += `Last update: ${lastUpdate}\n\n`;
+        });
     }
+    
+    // Add footer with operating hours
+    status += '\n⏰ Operating Hours: 7:00 AM - 12:00 AM';
     
     return {
-        text: statusMessage,
+        text: status,
         options: {
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '🔄 Update Gerai Status', callback_data: 'show_update_options' }]
+                    [{ text: '🔄 Refresh Status', callback_data: 'check_status' }],
+                    [{ text: '✏️ Update Status', callback_data: 'show_update_options' }]
                 ]
             }
         }
