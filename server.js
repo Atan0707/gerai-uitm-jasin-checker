@@ -24,6 +24,11 @@ const bot = new TelegramBot(token, {
 
 const patchNotes = `
 - Added a close button to the status message
+
+Notes:
+Support UiTM Blockchain Association by joining our telegram channel and follow our instagram account.
+Telegram Channel: https://t.me/+N8jDDGAYQq5mMWU1
+Instagram: https://www.instagram.com/uitmblockchainassociation/
 `;
 
 const lastUpdated = '5/2/2025 2.08 AM';
